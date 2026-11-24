@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Attacker Site ({{ attacker_origin }})</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body data-victim-origin="{{ victim_origin }}">
+  <header>
+    <span class="badge badge-attacker">Attacker Origin</span>
+    <h1>Attacker Site (<code>{{ attacker_origin }}</code>)</h1>
+    <p class="subtitle">
+      Targeting cross-site endpoint: <code>{{ victim_origin }}/private-group</code>
+    </p>
+  </header>
+
+  <section class="card">
+    <h2>Demo A: 2015 Paper (Classic Network vs. Service Worker Cache Timing)</h2>
+    <p>
+      Works when Victim uses <code>SameSite=None</code>. Notice that Random Server Delay ruins
+      Classic network timing, while post-download Service Worker Cache timing stays sharp.
+    </p>
+    <div class="controls">
+      <input id="runLabel" type="text" placeholder="Optional note (e.g. Logged Out, Logged In + Delay)">
+      <button id="runTimingBtn" class="btn-primary" type="button">Run Timing Probe</button>
+      <button id="clearHistoryBtn" class="btn-secondary" type="button">Clear History</button>
+    </div>
+    <pre id="timingOut">Ready...</pre>
+
+    <table class="history-table" id="historyTable" hidden>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Note</th>
+          <th>Classic Median (Spread)</th>
+          <th>SW Cache Median (Spread)</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody"></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Demo B: 2026 "Still Ticking" (<code>window.open</code> XS-Leak under <code>SameSite=Lax</code>)</h2>
+    <p>
+      Opens Victim in a popup (top-level navigation still carries <code>SameSite=Lax</code> cookies)
+      and reads <code>popup.length</code>. Blocked by <code>COOP: same-origin</code>,
+      <code>Sec-Fetch-Site</code>, or <code>SameSite=Strict</code>.
+    </p>
+    <div class="controls">
+      <button id="runPopupBtn" class="btn-primary" type="button">Run Popup XS-Leak</button>
+    </div>
+    <pre id="popupOut">Ready...</pre>
+  </section>
+
+  <footer>
+    Open the Victim dashboard in another tab:
+    <a href="{{ victim_origin }}" target="_blank" rel="noopener"><code>{{ victim_origin }}</code></a>
+  </footer>
+
+  <script src="{{ url_for('static', filename='attacker.js') }}" defer></script>
+</body>
+</html>
