@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Victim Site ({{ victim_origin }})</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <span class="badge badge-victim">Victim Origin</span>
+    <h1>Victim Site (<code>{{ victim_origin }}</code>)</h1>
+  </header>
+
+  <section class="card">
+    <h2>Session State</h2>
+    <p>
+      Current State:
+      <span class="status {{ 'status-in' if logged_in else 'status-out' }}">
+        {% if logged_in %}
+          LOGGED IN (500 kB + 3 iframes)
+        {% else %}
+          LOGGED OUT (2 kB + 0 iframes)
+        {% endif %}
+      </span>
+    </p>
+    <div class="btn-row">
+      <form method="post" action="{{ url_for('login') }}">
+        <button class="btn {{ 'active' if logged_in else '' }}" type="submit">Log In</button>
+      </form>
+      <form method="post" action="{{ url_for('logout') }}">
+        <button class="btn {{ 'active' if not logged_in else '' }}" type="submit">Log Out</button>
+      </form>
+      <a class="btn" href="{{ url_for('private_group') }}" target="_blank" rel="noopener">Preview /private-group</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>1. Cookie Policy (<code>SameSite</code>)</h2>
+    <div class="btn-row">
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="cookie_mode" value="none">
+        <button class="btn {{ 'active' if state.cookie_mode == 'none' else '' }}" type="submit">
+          SameSite=None (2015 / Opt-out)
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="cookie_mode" value="lax">
+        <button class="btn {{ 'active' if state.cookie_mode == 'lax' else '' }}" type="submit">
+          SameSite=Lax (2026 Default)
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="cookie_mode" value="strict">
+        <button class="btn {{ 'active' if state.cookie_mode == 'strict' else '' }}" type="submit">
+          SameSite=Strict
+        </button>
+      </form>
+    </div>
+
+    <h2>2. Classic Defense: Random Server Delay (150–450 ms)</h2>
+    <div class="btn-row">
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="random_delay" value="0">
+        <button class="btn {{ 'active' if not state.random_delay else '' }}" type="submit">Off</button>
+      </form>
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="random_delay" value="1">
+        <button class="btn {{ 'active' if state.random_delay else '' }}" type="submit">
+          On (Breaks Classic, Not SW)
+        </button>
+      </form>
+    </div>
+
+    <h2>3. Modern Server Defenses</h2>
+    <div class="btn-row">
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="defense" value="off">
+        <button class="btn {{ 'active' if state.defense == 'off' else '' }}" type="submit">None</button>
+      </form>
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="defense" value="sec-fetch">
+        <button class="btn {{ 'active' if state.defense == 'sec-fetch' else '' }}" type="submit">
+          Sec-Fetch-Site Block
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="defense" value="coop">
+        <button class="btn {{ 'active' if state.defense == 'coop' else '' }}" type="submit">
+          COOP: same-origin
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    Open the Attacker page in another tab:
+    <a href="{{ attacker_origin }}" target="_blank" rel="noopener"><code>{{ attacker_origin }}</code></a>
+  </footer>
+</body>
+</html>
