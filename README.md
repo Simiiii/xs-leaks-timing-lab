@@ -1,0 +1,39 @@
+# Modern Web Timing Attacks & XS-Leaks (Local Docker Demo)
+
+Single-container lab accompanying *"The Clock is Still Ticking: Timing Attacks in the Modern Web"* (Van Goethem et al., CCS 2015) and modern 2026 browser defenses.
+
+## Architecture
+
+Both origins run inside a single Docker container via `run.py`, separated into independent Flask applications (`victim` on port `8001` and `attacker` on port `8002`) with Jinja2 templates, static JS/CSS assets, a root-scoped Service Worker (`/sw.js`), thread-safe lab state, and graceful `SIGTERM` shutdown.
+
+`victim.localhost` and `attacker.localhost` resolve to loopback automatically (RFC 6761) with no `/etc/hosts` edits, while Chromium treats them as separate cross-site yet potentially trustworthy origins (allowing both Service Workers and `SameSite=None; Secure` cookies over HTTP).
+
+## What This Demonstrates
+- **Victim (`http://victim.localhost:8001`):** Returns a 500 kB page (3 hidden iframes) when logged in and a 2 kB page (0 iframes) when logged out, with live toggles for cookie policies, random server delays, and modern security headers.
+- **Attacker (`http://attacker.localhost:8002`):** Runs two cross-site probes against the victim:
+  1. **2015 Service Worker Timing vs. Classic Timing:** Shows that random server delays break classic network timing, while post-download Service Worker Cache API timing still reveals response size (and ignores `Cache-Control: no-store`). Includes a run-history table for side-by-side comparison.
+  2. **2026 `SameSite=Lax` Bypass (`window.open`):** Shows that modern default cookies stop background subrequest leaks, but top-level navigations still carry `SameSite=Lax` cookies unless blocked by `Cross-Origin-Opener-Policy: same-origin` (COOP), `Sec-Fetch-Site`, or `SameSite=Strict`.
+
+## Quick Start (Docker Only)
+```bash
+docker build -t web-timing-demo .
+docker run --rm -p 8001:8001 -p 8002:8002 web-timing-demo
+```
+
+Open both URLs in a **normal Chromium/Chrome window** (avoid Incognito, which blocks third-party cookies by default):
+
+- Victim dashboard: `http://victim.localhost:8001`
+- Attacker page: `http://attacker.localhost:8002`
+
+## Running Tests
+```bash
+docker run --rm web-timing-demo pytest -v
+```
+
+## 1-Minute Presentation Flow
+
+1. **Show the 2015 leak:** Keep `SameSite=None`. Run **Demo A** while Logged Out, then Log In and run it again. Note the jump in Service Worker cache time in the comparison table.
+2. **Break classic defenses:** Turn **Random Server Delay ON**. Re-run **Demo A** to show Classic Network timing gets noisy while Service Worker timing stays unaffected.
+3. **Apply modern defaults:** Switch to `SameSite=Lax` (or `Sec-Fetch-Site Block`). Re-run **Demo A** to show the 2015 leak is closed.
+4. **Show "Still Ticking" (2026):** With `SameSite=Lax` active, run **Demo B**. The popup leaks your login state via `popup.length`.
+5. **Close the final gap:** Enable `COOP: same-origin` (or `SameSite=Strict`) and re-run **Demo B** to show the leak is stopped.
