@@ -1,12 +1,12 @@
 # Modern Web Timing Attacks & XS-Leaks (Local Docker Demo)
 
-Single-container lab accompanying *"The Clock is Still Ticking: Timing Attacks in the Modern Web"* (Van Goethem et al., CCS 2015) and modern 2026 browser defenses.
+An interactive, single-container lab demonstrating how cross-site timing attacks and XS-Leaks infer whether a user is logged in. It covers the 2015 Service Worker cache timing attack (*"The Clock is Still Ticking"*, Van Goethem et al., CCS 2015), a modern `SameSite=Lax` popup bypass, and the browser defenses that stop them.
 
 ## Architecture
 
-Both origins run inside a single Docker container via `run.py`, separated into independent Flask applications (`victim` on port `8001` and `attacker` on port `8002`) with Jinja2 templates, static JS/CSS assets, a root-scoped Service Worker (`/sw.js`), thread-safe lab state, and graceful `SIGTERM` shutdown.
+A single Docker container runs two independent Flask apps: **Victim** (`http://victim.localhost:8001`) and **Attacker** (`http://attacker.localhost:8002`).
 
-`victim.localhost` and `attacker.localhost` resolve to loopback automatically (RFC 6761) with no `/etc/hosts` edits, while Chromium treats them as separate cross-site yet potentially trustworthy origins (allowing both Service Workers and `SameSite=None; Secure` cookies over HTTP).
+Both `*.localhost` hostnames resolve to loopback automatically, while modern browsers treat them as separate cross-site yet trustworthy origins—allowing Service Workers and `SameSite=None; Secure` cookies over HTTP.
 
 ## What This Demonstrates
 - **Victim (`http://victim.localhost:8001`):** Serves a 2 MB JS subresource (`/private-group/asset.js`, for Demo A — passes modern ORB while staying opaque to `no-cors` fetches) and an HTML page with 3 hidden iframes (`/private-group`, for Demo B) when logged in, vs. 2 kB / 0 iframes when logged out, both with `Cache-Control: no-store` and live toggles for cookie policies, random server delays, and modern security headers.
@@ -14,18 +14,12 @@ Both origins run inside a single Docker container via `run.py`, separated into i
   1. **2015 Service Worker Timing vs. Classic Timing:** Shows that random server delays break classic network timing, while post-download Service Worker Cache API timing still reveals response size (and ignores `Cache-Control: no-store`). Includes a run-history table for side-by-side comparison.
   2. **2026 `SameSite=Lax` Bypass (`window.open`):** Shows that modern default cookies stop background subrequest leaks, but top-level navigations still carry `SameSite=Lax` cookies unless blocked by `Cross-Origin-Opener-Policy: same-origin` (COOP), `Sec-Fetch-Site`, or `SameSite=Strict`.
 
-## Quick Start (Prebuilt Docker Image)
+## Quick Start
 
 Run the published image directly from GitHub Container Registry (supports `amd64` and `arm64`, no local build required):
 
 ```bash
 docker run --rm -p 8001:8001 -p 8002:8002 ghcr.io/simiiii/xs-leaks-timing-lab:latest
-```
-
-To update to the newest published version later:
-
-```bash
-docker pull ghcr.io/simiiii/xs-leaks-timing-lab:latest
 ```
 
 Open both URLs in a **normal Chromium/Chrome window** (avoid Incognito, which blocks third-party cookies by default):
