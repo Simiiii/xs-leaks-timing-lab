@@ -123,6 +123,12 @@ code {
 .status-in { color: var(--accent); }
 .status-out { color: var(--danger); }
 
+.hint {
+  margin: 0.4rem 0 0.8rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
 footer {
   color: var(--muted);
   font-size: 0.95rem;

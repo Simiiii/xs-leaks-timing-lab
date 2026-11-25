@@ -25,11 +25,14 @@
       Current State:
       <span class="status {{ 'status-in' if logged_in else 'status-out' }}">
         {% if logged_in %}
-          LOGGED IN (2 MB asset)
+          LOGGED IN (2 MB JS asset · 3 iframes)
         {% else %}
-          LOGGED OUT (2 kB asset)
+          LOGGED OUT (2 kB JS asset · 0 iframes)
         {% endif %}
       </span>
+    </p>
+    <p class="hint">
+      Both endpoints send <code>Cache-Control: no-store</code>. Demo A targets a JS subresource (passes ORB); Demo B opens <code>/private-group</code> in a popup.
     </p>
     <div class="btn-row">
       <form method="post" action="{{ url_for('login') }}">
