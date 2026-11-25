@@ -1,5 +1,6 @@
 const victimOrigin = document.body.dataset.victimOrigin;
-const targetUrl = `${victimOrigin}/private-group`;
+const timingTargetUrl = `${victimOrigin}/private-group/asset.js`;
+const popupTargetUrl = `${victimOrigin}/private-group`;
 
 const timingOut = document.getElementById('timingOut');
 const popupOut = document.getElementById('popupOut');
@@ -10,35 +11,78 @@ const runLabelInput = document.getElementById('runLabel');
 const historyTable = document.getElementById('historyTable');
 const historyBody = document.getElementById('historyBody');
 
-let runCount = 0;
+const runs = [];
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
 }
 
-function appendHistoryRow(label, data) {
-  runCount += 1;
-  historyTable.hidden = false;
+function createMetricCell(median, spread, maxVal, barClass) {
+  const td = document.createElement('td');
+  td.className = 'metric-cell';
 
-  const tr = document.createElement('tr');
-  const cells = [
-    String(runCount),
-    label || `Run ${runCount}`,
-    `${data.netMedian} ms (±${data.netSpread} ms)`,
-    `${data.swMedian} ms (±${data.swSpread} ms)`,
-  ];
+  const label = document.createElement('div');
+  label.className = 'metric-val';
+  label.textContent = `${median.toFixed(2)} ms (${spread.toFixed(2)} ms)`;
 
-  for (const text of cells) {
-    const td = document.createElement('td');
-    td.textContent = text;
-    tr.appendChild(td);
+  const track = document.createElement('div');
+  track.className = 'bar-track';
+
+  const fill = document.createElement('div');
+  fill.className = `bar-fill ${barClass}`;
+  const pct = maxVal > 0 ? Math.max(3, Math.round((median / maxVal) * 100)) : 0;
+  fill.style.width = `${pct}%`;
+
+  track.appendChild(fill);
+  td.appendChild(label);
+  td.appendChild(track);
+  return td;
+}
+
+function renderHistory() {
+  historyBody.replaceChildren();
+  if (runs.length === 0) {
+    historyTable.hidden = true;
+    return;
   }
-  historyBody.appendChild(tr);
+
+  historyTable.hidden = false;
+  const maxNet = Math.max(...runs.map((r) => r.netMedian));
+  const maxSw = Math.max(...runs.map((r) => r.swMedian));
+
+  for (const run of runs) {
+    const tr = document.createElement('tr');
+
+    const numTd = document.createElement('td');
+    numTd.textContent = String(run.index);
+
+    const noteTd = document.createElement('td');
+    noteTd.textContent = run.label;
+
+    tr.appendChild(numTd);
+    tr.appendChild(noteTd);
+    tr.appendChild(createMetricCell(run.netMedian, run.netSpread, maxNet, 'bar-fill-net'));
+    tr.appendChild(createMetricCell(run.swMedian, run.swSpread, maxSw, 'bar-fill-sw'));
+    historyBody.appendChild(tr);
+  }
+}
+
+function appendHistoryRow(label, data) {
+  const index = runs.length + 1;
+  runs.push({
+    index,
+    label: label || `Run ${index}`,
+    netMedian: Number(data.netMedian),
+    netSpread: Number(data.netSpread),
+    swMedian: Number(data.swMedian),
+    swSpread: Number(data.swSpread),
+  });
+  renderHistory();
 }
 
 async function runTimingAttack() {
   if (!('serviceWorker' in navigator)) {
-    timingOut.textContent = 'Service Workers are unavailable in this context (use http://attacker.localhost:8002).';
+    timingOut.textContent = 'Service Workers are unavailable in this context (open via attacker.localhost).';
     return;
   }
 
@@ -67,7 +111,7 @@ async function runTimingAttack() {
       runLabelInput.value = '';
     };
 
-    reg.active.postMessage({ target: targetUrl }, [channel.port2]);
+    reg.active.postMessage({ target: timingTargetUrl }, [channel.port2]);
   } catch (err) {
     runTimingBtn.disabled = false;
     timingOut.textContent = 'Error: ' + err;
@@ -76,11 +120,15 @@ async function runTimingAttack() {
 
 function runPopupLeak() {
   popupOut.textContent = 'Opening popup...';
-  const win = window.open(targetUrl, '_blank', 'width=400,height=300');
+  const win = window.open(popupTargetUrl, '_blank', 'width=400,height=300');
+  if (!win) {
+    popupOut.textContent = 'Popup blocked by browser (allow popups for this site to run Demo B).';
+    return;
+  }
 
   setTimeout(() => {
     try {
-      if (!win || win.closed) {
+      if (win.closed) {
         popupOut.textContent = 'Popup handle severed (COOP: same-origin blocked the leak).';
         return;
       }
@@ -100,7 +148,6 @@ function runPopupLeak() {
 runTimingBtn.addEventListener('click', runTimingAttack);
 runPopupBtn.addEventListener('click', runPopupLeak);
 clearHistoryBtn.addEventListener('click', () => {
-  runCount = 0;
-  historyBody.replaceChildren();
-  historyTable.hidden = true;
+  runs.length = 0;
+  renderHistory();
 });

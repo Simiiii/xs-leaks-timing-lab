@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import os
 import random
+import secrets
 import threading
 import time
 from dataclasses import asdict, dataclass
 
 from flask import Flask, jsonify, make_response, redirect, render_template, request, url_for
 
-PADDING_500KB = "A" * 500_000
+PADDING_2MB = "A" * 2_000_000
 PADDING_2KB = "B" * 2_000
 
 VALID_COOKIE_MODES = {"none", "lax", "strict"}
@@ -69,7 +70,11 @@ def create_app(
     attacker_origin: str | None = None,
 ) -> Flask:
     app = Flask(__name__)
+    if os.environ.get("RELOAD", "").lower() in {"1", "true", "on"}:
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+        app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
     store = StateStore()
+    session_token = secrets.token_hex(16)
 
     app.config["VICTIM_ORIGIN"] = victim_origin or os.environ.get(
         "VICTIM_ORIGIN", "http://victim.localhost:8001"
@@ -80,7 +85,7 @@ def create_app(
     app.extensions["state_store"] = store
 
     def is_logged_in() -> bool:
-        return request.cookies.get("session") == "authenticated"
+        return request.cookies.get("session") == session_token
 
     @app.get("/")
     def dashboard():
@@ -106,7 +111,7 @@ def create_app(
     def login():
         state = store.snapshot()
         resp = make_response(redirect(url_for("dashboard")))
-        _set_session_cookie(resp, "authenticated", state.cookie_mode)
+        _set_session_cookie(resp, session_token, state.cookie_mode)
         return resp
 
     @app.post("/logout")
@@ -132,15 +137,12 @@ def create_app(
 
         resp = make_response(redirect(url_for("dashboard")))
         if is_logged_in():
-            _set_session_cookie(resp, "authenticated", state.cookie_mode)
+            _set_session_cookie(resp, session_token, state.cookie_mode)
         return resp
 
     @app.get("/private-group")
     def private_group():
         state = store.snapshot()
-        if state.random_delay:
-            time.sleep(random.uniform(0.15, 0.45))
-
         sec_fetch_site = request.headers.get("Sec-Fetch-Site", "")
         if state.sec_fetch and sec_fetch_site == "cross-site":
             resp = make_response(
@@ -149,7 +151,7 @@ def create_app(
             )
         elif is_logged_in():
             resp = make_response(
-                render_template("private_member.html", padding=PADDING_500KB),
+                render_template("private_member.html", padding=PADDING_2KB),
                 200,
             )
         else:
@@ -161,6 +163,28 @@ def create_app(
         resp.headers["Cache-Control"] = "no-store"
         if state.coop:
             resp.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        return resp
+
+    @app.get("/private-group/asset.js")
+    def private_group_asset():
+        state = store.snapshot()
+        if state.random_delay:
+            time.sleep(random.uniform(0.15, 0.45))
+
+        sec_fetch_site = request.headers.get("Sec-Fetch-Site", "")
+        if state.sec_fetch and sec_fetch_site == "cross-site":
+            body = f"/* blocked: {PADDING_2KB} */\n"
+            status = 403
+        elif is_logged_in():
+            body = f"/* member asset: {PADDING_2MB} */\n"
+            status = 200
+        else:
+            body = f"/* denied: {PADDING_2KB} */\n"
+            status = 200
+
+        resp = make_response(body, status)
+        resp.headers["Content-Type"] = "application/javascript; charset=utf-8"
+        resp.headers["Cache-Control"] = "no-store"
         return resp
 
     return app

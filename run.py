@@ -2,25 +2,45 @@ from __future__ import annotations
 
 import os
 import signal
+import ssl
 import threading
+from pathlib import Path
 
+from werkzeug._reloader import run_with_reloader
 from werkzeug.serving import make_server
 
 from attacker.app import create_app as create_attacker_app
 from victim.app import create_app as create_victim_app
 
 
-def main() -> None:
+def _build_ssl_context() -> ssl.SSLContext | None:
+    cert_path = Path(os.environ.get("TLS_CERT", "/certs/cert.pem"))
+    key_path = Path(os.environ.get("TLS_KEY", "/certs/key.pem"))
+    if cert_path.is_file() and key_path.is_file():
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(certfile=str(cert_path), keyfile=str(key_path))
+        return ctx
+    return None
+
+
+def serve() -> None:
     victim_port = int(os.environ.get("VICTIM_PORT", "8001"))
     attacker_port = int(os.environ.get("ATTACKER_PORT", "8002"))
-    victim_origin = os.environ.get("VICTIM_ORIGIN", f"http://victim.localhost:{victim_port}")
-    attacker_origin = os.environ.get("ATTACKER_ORIGIN", f"http://attacker.localhost:{attacker_port}")
+    ssl_context = _build_ssl_context()
+    scheme = "https" if ssl_context else "http"
+
+    victim_origin = os.environ.get("VICTIM_ORIGIN", f"{scheme}://victim.localhost:{victim_port}")
+    attacker_origin = os.environ.get("ATTACKER_ORIGIN", f"{scheme}://attacker.localhost:{attacker_port}")
 
     victim_app = create_victim_app(victim_origin=victim_origin, attacker_origin=attacker_origin)
     attacker_app = create_attacker_app(victim_origin=victim_origin, attacker_origin=attacker_origin)
 
-    victim_server = make_server("0.0.0.0", victim_port, victim_app, threaded=True)
-    attacker_server = make_server("0.0.0.0", attacker_port, attacker_app, threaded=True)
+    victim_server = make_server(
+        "0.0.0.0", victim_port, victim_app, threaded=True, ssl_context=ssl_context
+    )
+    attacker_server = make_server(
+        "0.0.0.0", attacker_port, attacker_app, threaded=True, ssl_context=ssl_context
+    )
 
     stop_event = threading.Event()
 
@@ -31,8 +51,9 @@ def main() -> None:
             threading.Thread(target=victim_server.shutdown, daemon=True).start()
             threading.Thread(target=attacker_server.shutdown, daemon=True).start()
 
-    signal.signal(signal.SIGINT, handle_signal)
-    signal.signal(signal.SIGTERM, handle_signal)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGINT, handle_signal)
+        signal.signal(signal.SIGTERM, handle_signal)
 
     print(f"Victim running at   {victim_origin}")
     print(f"Attacker running at {attacker_origin}")
@@ -46,6 +67,13 @@ def main() -> None:
     t_attacker.join()
     victim_server.server_close()
     attacker_server.server_close()
+
+
+def main() -> None:
+    if os.environ.get("RELOAD", "").lower() in {"1", "true", "on"}:
+        run_with_reloader(serve, reloader_type="stat")
+    else:
+        serve()
 
 
 if __name__ == "__main__":

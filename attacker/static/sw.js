@@ -11,6 +11,8 @@ self.addEventListener('message', async (event) => {
   }
 
   try {
+    const cache = await caches.open('timing-demo');
+
     // 1. Classic network timing (5 cross-site no-cors downloads)
     const netTimes = [];
     let lastResponse = null;
@@ -21,19 +23,35 @@ self.addEventListener('message', async (event) => {
         credentials: 'include',
         cache: 'no-store',
       });
+      if (i === 4) {
+        lastResponse = res.clone();
+      }
+      // Drain the opaque body completely so the browser doesn't abort the socket mid-transfer
+      await cache.put('/net-drain', res);
       netTimes.push(performance.now() - t0);
-      lastResponse = res;
     }
+    await cache.delete('/net-drain');
 
-    // 2. Service Worker Cache API timing (post-download, 15 store/delete cycles)
-    const cache = await caches.open('timing-demo');
+    // 2. Service Worker Cache API timing (post-download, batched puts to amplify size signal)
+    const BATCHES = 5;
+    const PUTS_PER_BATCH = 10;
     const swTimes = [];
-    for (let i = 0; i < 15; i++) {
-      const cloned = lastResponse.clone();
+
+    for (let b = 0; b < BATCHES; b++) {
+      const clones = [];
+      for (let i = 0; i < PUTS_PER_BATCH; i++) {
+        clones.push(lastResponse.clone());
+      }
+
       const t0 = performance.now();
-      await cache.put('/probe-' + i, cloned);
-      await cache.delete('/probe-' + i);
+      for (let i = 0; i < PUTS_PER_BATCH; i++) {
+        await cache.put('/probe-' + i, clones[i]);
+      }
       swTimes.push(performance.now() - t0);
+
+      for (let i = 0; i < PUTS_PER_BATCH; i++) {
+        await cache.delete('/probe-' + i);
+      }
     }
 
     const median = (arr) => {

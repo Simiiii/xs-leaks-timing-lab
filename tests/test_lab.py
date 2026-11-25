@@ -53,18 +53,24 @@ def test_private_group_payload_size_logged_out_vs_in(victim_client):
     login_resp = victim_client.post("/login")
     assert login_resp.status_code == 302
     set_cookie = login_resp.headers.get("Set-Cookie", "")
-    assert "session=authenticated" in set_cookie
+    assert "session=" in set_cookie
     assert "SameSite=None" in set_cookie
     assert "Secure" in set_cookie
 
     in_resp = victim_client.get("/private-group")
     assert in_resp.status_code == 200
-    assert len(in_resp.data) > 500_000
     assert in_resp.data.count(b"<iframe") == 3
+
+    asset_in = victim_client.get("/private-group/asset.js")
+    assert asset_in.status_code == 200
+    assert "javascript" in asset_in.content_type
+    assert asset_in.headers["Cache-Control"] == "no-store"
+    assert len(asset_in.data) > 2_000_000
 
     logout_resp = victim_client.post("/logout")
     assert logout_resp.status_code == 302
     assert len(victim_client.get("/private-group").data) < 5_000
+    assert len(victim_client.get("/private-group/asset.js").data) < 5_000
 
 
 def test_cookie_mode_reissues_cookie_when_logged_in(victim_client):
@@ -88,9 +94,19 @@ def test_sec_fetch_site_defense(victim_client):
     assert blocked.status_code == 403
     assert len(blocked.data) < 5_000
 
+    blocked_asset = victim_client.get("/private-group/asset.js", headers={"Sec-Fetch-Site": "cross-site"})
+    assert blocked_asset.status_code == 403
+    assert len(blocked_asset.data) < 5_000
+
     same_origin = victim_client.get("/private-group", headers={"Sec-Fetch-Site": "same-origin"})
     assert same_origin.status_code == 200
-    assert len(same_origin.data) > 500_000
+    assert same_origin.data.count(b"<iframe") == 3
+
+    same_origin_asset = victim_client.get(
+        "/private-group/asset.js", headers={"Sec-Fetch-Site": "same-origin"}
+    )
+    assert same_origin_asset.status_code == 200
+    assert len(same_origin_asset.data) > 2_000_000
 
 
 def test_coop_defense_header(victim_client):

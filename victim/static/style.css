@@ -1,10 +1,11 @@
 :root {
-  --bg: #f8fafc;
+  --bg: #f0fdfa;
   --card: #ffffff;
-  --border: #e2e8f0;
+  --border: #99f6e4;
   --text: #0f172a;
   --muted: #475569;
   --accent: #0f766e;
+  --accent-dark: #115e59;
   --danger: #b91c1c;
 }
 
@@ -12,16 +13,63 @@
 
 body {
   font-family: system-ui, -apple-system, sans-serif;
-  max-width: 760px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  margin: 0;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
 }
 
-header { margin-bottom: 1.25rem; }
-h1 { margin: 0.35rem 0 0; font-size: 1.5rem; }
+.role-banner {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: #ffffff;
+  border-bottom: 4px solid #0d9488;
+  padding: 1.1rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.role-banner-inner,
+.container {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.container {
+  padding: 0 1rem 2rem;
+}
+
+.role-tag {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.role-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.role-banner h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  letter-spacing: -0.01em;
+}
+
+.origin-pill {
+  background: rgba(15, 23, 42, 0.28);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
 h2 { margin: 1.1rem 0 0.5rem; font-size: 1.05rem; }
 h2:first-child { margin-top: 0; }
 h3 { margin: 0.9rem 0 0.4rem; font-size: 0.92rem; color: var(--muted); font-weight: 600; }
@@ -33,24 +81,14 @@ code {
   font-size: 0.9em;
 }
 
-.badge {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.badge-victim { background: #ccfbf1; color: #115e59; }
-
 .card {
   background: var(--card);
   border: 1px solid var(--border);
+  border-left: 5px solid var(--accent);
   border-radius: 10px;
   padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 .btn-row {

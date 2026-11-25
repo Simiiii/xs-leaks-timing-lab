@@ -14,6 +14,9 @@ def create_app(
     attacker_origin: str | None = None,
 ) -> Flask:
     app = Flask(__name__)
+    if os.environ.get("RELOAD", "").lower() in {"1", "true", "on"}:
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+        app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
     app.config["VICTIM_ORIGIN"] = victim_origin or os.environ.get(
         "VICTIM_ORIGIN", "http://victim.localhost:8001"

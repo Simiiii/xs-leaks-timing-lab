@@ -9,12 +9,12 @@ Both origins run inside a single Docker container via `run.py`, separated into i
 `victim.localhost` and `attacker.localhost` resolve to loopback automatically (RFC 6761) with no `/etc/hosts` edits, while Chromium treats them as separate cross-site yet potentially trustworthy origins (allowing both Service Workers and `SameSite=None; Secure` cookies over HTTP).
 
 ## What This Demonstrates
-- **Victim (`http://victim.localhost:8001`):** Returns a 500 kB page (3 hidden iframes) when logged in and a 2 kB page (0 iframes) when logged out, with live toggles for cookie policies, random server delays, and modern security headers.
+- **Victim (`http://victim.localhost:8001`):** Serves a 2 MB subresource (`/private-group/asset.js`, for Demo A) and an HTML page with 3 hidden iframes (`/private-group`, for Demo B) when logged in, vs. 2 kB / 0 iframes when logged out, with live toggles for cookie policies, random server delays, and modern security headers.
 - **Attacker (`http://attacker.localhost:8002`):** Runs two cross-site probes against the victim:
   1. **2015 Service Worker Timing vs. Classic Timing:** Shows that random server delays break classic network timing, while post-download Service Worker Cache API timing still reveals response size (and ignores `Cache-Control: no-store`). Includes a run-history table for side-by-side comparison.
   2. **2026 `SameSite=Lax` Bypass (`window.open`):** Shows that modern default cookies stop background subrequest leaks, but top-level navigations still carry `SameSite=Lax` cookies unless blocked by `Cross-Origin-Opener-Policy: same-origin` (COOP), `Sec-Fetch-Site`, or `SameSite=Strict`.
 
-## Quick Start (Docker Only)
+## Quick Start (Docker)
 ```bash
 docker build -t web-timing-demo .
 docker run --rm -p 8001:8001 -p 8002:8002 web-timing-demo
@@ -24,6 +24,25 @@ Open both URLs in a **normal Chromium/Chrome window** (avoid Incognito, which bl
 
 - Victim dashboard: `http://victim.localhost:8001`
 - Attacker page: `http://attacker.localhost:8002`
+
+## Optional: Local HTTPS (`mkcert`)
+HTTPS is optional (plain HTTP works in Chromium on `*.localhost`). If you prefer HTTPS, generate a local cert once and mount `./certs` — `run.py` enables TLS automatically when `/certs/cert.pem` and `/certs/key.pem` are present:
+
+```bash
+brew install mkcert && mkcert -install
+mkdir -p certs
+mkcert -cert-file certs/cert.pem -key-file certs/key.pem victim.localhost attacker.localhost
+docker run --rm -p 8001:8001 -p 8002:8002 -v "$PWD/certs:/certs:ro" web-timing-demo
+```
+
+## Development (Hot Reload)
+Hot reload is **off by default**. To edit Python, templates, JS, or CSS without rebuilding the Docker image, mount the repo and set `RELOAD=1`:
+
+```bash
+docker run --rm -p 8001:8001 -p 8002:8002 -e RELOAD=1 -v "$PWD:/app" web-timing-demo
+```
+
+Saving any `.py` file restarts the servers automatically; template/static changes apply on browser refresh. (Add `-v "$PWD/certs:/certs:ro"` if developing over HTTPS.)
 
 ## Running Tests
 ```bash

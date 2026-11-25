@@ -1,10 +1,11 @@
 :root {
-  --bg: #f8fafc;
+  --bg: #fff1f2;
   --card: #ffffff;
-  --border: #e2e8f0;
+  --border: #fecdd3;
   --text: #0f172a;
   --muted: #475569;
   --accent: #be123c;
+  --accent-dark: #881337;
   --accent-hover: #9f1239;
 }
 
@@ -12,18 +13,68 @@
 
 body {
   font-family: system-ui, -apple-system, sans-serif;
-  max-width: 780px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  margin: 0;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
 }
 
-header { margin-bottom: 1.25rem; }
-h1 { margin: 0.35rem 0 0; font-size: 1.5rem; }
+.role-banner {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: #ffffff;
+  border-bottom: 4px solid #e11d48;
+  padding: 1.1rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.role-banner-inner,
+.container {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.container {
+  padding: 0 1rem 2rem;
+}
+
+.role-tag {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.role-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.role-banner h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  letter-spacing: -0.01em;
+}
+
+.origin-pill,
+.target-pill {
+  background: rgba(15, 23, 42, 0.28);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.target-pill { font-size: 0.88rem; }
+
 h2 { margin: 0 0 0.5rem; font-size: 1.05rem; }
-.subtitle { margin: 0.35rem 0 0; color: var(--muted); }
+.subtitle { margin: 0.45rem 0 0; color: rgba(255, 255, 255, 0.9); font-size: 0.92rem; }
 
 code {
   background: #f1f5f9;
@@ -32,24 +83,14 @@ code {
   font-size: 0.9em;
 }
 
-.badge {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.badge-attacker { background: #ffe4e6; color: #9f1239; }
-
 .card {
   background: var(--card);
   border: 1px solid var(--border);
+  border-left: 5px solid var(--accent);
   border-radius: 10px;
   padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 .controls {
@@ -120,6 +161,31 @@ pre {
   color: var(--muted);
   font-weight: 600;
 }
+
+.metric-cell {
+  min-width: 170px;
+}
+
+.metric-val {
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+
+.bar-track {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.bar-fill-net { background: #64748b; }
+.bar-fill-sw { background: var(--accent); }
 
 footer {
   color: var(--muted);
