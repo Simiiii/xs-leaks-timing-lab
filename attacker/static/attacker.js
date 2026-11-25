@@ -1,4 +1,5 @@
 const victimOrigin = document.body.dataset.victimOrigin;
+const attackerOrigin = document.body.dataset.attackerOrigin;
 const timingTargetUrl = `${victimOrigin}/private-group/asset.js`;
 const popupTargetUrl = `${victimOrigin}/private-group`;
 
@@ -103,7 +104,7 @@ function appendHistoryRow(label, data) {
 
 async function runTimingAttack() {
   if (!('serviceWorker' in navigator)) {
-    timingOut.textContent = 'Service Workers are unavailable in this context (open via attacker.localhost).';
+    timingOut.textContent = `Service Workers are unavailable in this context (open via ${attackerOrigin}).`;
     return;
   }
 
