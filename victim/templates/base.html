@@ -2,116 +2,143 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}VICTIM — {{ victim_origin }}{% endblock %}</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230f766e'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' font-family='sans-serif' font-weight='bold' fill='white'%3EV%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <header class="role-banner">
-    <div class="role-banner-inner">
-      <div class="role-tag">VICTIM ORIGIN</div>
-      <div class="role-row">
-        <h1>Victim Site</h1>
-        <code class="origin-pill">{{ victim_origin }}</code>
+  <header class="victim-top">
+    <div class="inner">
+      <div class="topbar">
+        <div class="identity">
+          <h1>Victim</h1>
+          <span class="role-sub">Target Origin</span>
+        </div>
+        <nav class="demo-tabs" aria-label="Demos">
+          <a
+            href="{{ url_for('dashboard') }}"
+            class="demo-tab {{ 'active' if active_tab == 'demo-a' else '' }}"
+            {% if active_tab == 'demo-a' %}aria-current="page"{% endif %}
+          >Demo A: SW Timing</a>
+          <a
+            href="{{ url_for('demo_b') }}"
+            class="demo-tab {{ 'active' if active_tab == 'demo-b' else '' }}"
+            {% if active_tab == 'demo-b' %}aria-current="page"{% endif %}
+          >Demo B: Popup Leak</a>
+        </nav>
       </div>
+
+      <section class="window-frame" aria-label="Victim Page Window">
+        <div class="window-chrome">
+          <div class="window-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="window-url mono">
+            {{ victim_origin }}<span class="url-path">{{ posture.endpoint }}</span>
+          </div>
+          {% block window_extra_action %}{% endblock %}
+        </div>
+
+        <div class="window-body">
+          <div class="session-row">
+            <div class="session-state {{ 'in' if logged_in else 'out' }}">
+              <span class="state-dot" aria-hidden="true"></span>
+              <span>{{ 'Logged In' if logged_in else 'Logged Out' }}</span>
+            </div>
+            <div class="btn-group">
+              {% if logged_in %}
+                <form method="post" action="{{ url_for('logout') }}">
+                  <input type="hidden" name="tab" value="{{ active_tab }}">
+                  <button class="btn" type="submit">Log Out</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ url_for('login') }}">
+                  <input type="hidden" name="tab" value="{{ active_tab }}">
+                  <button class="btn active" type="submit">Log In</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="viewport-content">
+            <span class="viewport-label">{{ 'Private Group (Member)' if logged_in else 'Access Denied (Guest)' }}</span>
+            <div class="chips">{% block resource_chips %}{% endblock %}</div>
+          </div>
+        </div>
+      </section>
     </div>
   </header>
 
-  <main class="container">
-    <nav class="demo-tabs" aria-label="Demos">
-      <a
-        href="{{ url_for('dashboard') }}"
-        class="demo-tab {{ 'active' if active_tab == 'demo-a' else '' }}"
-        {% if active_tab == 'demo-a' %}aria-current="page"{% endif %}
-      >
-        Demo A: 2015 SW Timing
-      </a>
-      <a
-        href="{{ url_for('demo_b') }}"
-        class="demo-tab {{ 'active' if active_tab == 'demo-b' else '' }}"
-        {% if active_tab == 'demo-b' %}aria-current="page"{% endif %}
-      >
-        Demo B: 2026 Popup XS-Leak
-      </a>
-    </nav>
-
-    <section class="card">
-      <h2>Session State</h2>
-      <p>
-        Current State:
-        <span class="status {{ 'status-in' if logged_in else 'status-out' }}">
-          {% block session_state_label %}{% endblock %}
-        </span>
-      </p>
-      <p class="hint">{% block session_hint %}{% endblock %}</p>
-      <div class="btn-row">
-        <form method="post" action="{{ url_for('login') }}">
-          <input type="hidden" name="tab" value="{{ active_tab }}">
-          <button class="btn {{ 'active' if logged_in else '' }}" type="submit">Log In</button>
-        </form>
-        <form method="post" action="{{ url_for('logout') }}">
-          <input type="hidden" name="tab" value="{{ active_tab }}">
-          <button class="btn {{ 'active' if not logged_in else '' }}" type="submit">Log Out</button>
-        </form>
-        {% block session_extra_actions %}{% endblock %}
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Shared Defenses (Demo A &amp; Demo B)</h2>
-
-      <h3>Cookie Policy (<code>SameSite</code>)</h3>
-      <div class="btn-row">
-        <form method="post" action="{{ url_for('config') }}">
-          <input type="hidden" name="tab" value="{{ active_tab }}">
-          <input type="hidden" name="cookie_mode" value="none">
-          <button class="btn {{ 'active' if state.cookie_mode == 'none' else '' }}" type="submit">
-            SameSite=None (2015 / Opt-out)
-          </button>
-        </form>
-        <form method="post" action="{{ url_for('config') }}">
-          <input type="hidden" name="tab" value="{{ active_tab }}">
-          <input type="hidden" name="cookie_mode" value="lax">
-          <button class="btn {{ 'active' if state.cookie_mode == 'lax' else '' }}" type="submit">
-            SameSite=Lax (2026 Default — Blocks A)
-          </button>
-        </form>
-        <form method="post" action="{{ url_for('config') }}">
-          <input type="hidden" name="tab" value="{{ active_tab }}">
-          <input type="hidden" name="cookie_mode" value="strict">
-          <button class="btn {{ 'active' if state.cookie_mode == 'strict' else '' }}" type="submit">
-            SameSite=Strict (Blocks A &amp; B)
-          </button>
-        </form>
+  <main class="config-dock">
+    <div class="config-inner">
+      <div class="posture {{ posture.level }}">
+        <strong>{{ posture.verdict }}</strong>
+        <span class="posture-detail mono">{{ posture.observed }}</span>
       </div>
 
-      <h3>Fetch Metadata (<code>Sec-Fetch-Site</code>)</h3>
-      <div class="btn-row">
-        <form method="post" action="{{ url_for('config') }}">
-          <input type="hidden" name="tab" value="{{ active_tab }}">
-          <input type="hidden" name="sec_fetch" value="0">
-          <button class="btn {{ 'active' if not state.sec_fetch else '' }}" type="submit">Off</button>
-        </form>
-        <form method="post" action="{{ url_for('config') }}">
-          <input type="hidden" name="tab" value="{{ active_tab }}">
-          <input type="hidden" name="sec_fetch" value="1">
-          <button class="btn {{ 'active' if state.sec_fetch else '' }}" type="submit">
-            Block Cross-Site (Blocks A &amp; B)
-          </button>
-        </form>
+      <div class="controls-list">
+        <div class="ctrl-row">
+          <span class="ctrl-label"><code>SameSite</code></span>
+          <div class="seg">
+            <form method="post" action="{{ url_for('config') }}">
+              <input type="hidden" name="tab" value="{{ active_tab }}">
+              <input type="hidden" name="cookie_mode" value="none">
+              <button class="opt {{ 'active' if state.cookie_mode == 'none' else '' }}" type="submit">None</button>
+            </form>
+            <form method="post" action="{{ url_for('config') }}">
+              <input type="hidden" name="tab" value="{{ active_tab }}">
+              <input type="hidden" name="cookie_mode" value="lax">
+              <button class="opt {{ 'active' if state.cookie_mode == 'lax' else '' }}" type="submit">Lax</button>
+            </form>
+            <form method="post" action="{{ url_for('config') }}">
+              <input type="hidden" name="tab" value="{{ active_tab }}">
+              <input type="hidden" name="cookie_mode" value="strict">
+              <button class="opt {{ 'active' if state.cookie_mode == 'strict' else '' }}" type="submit">Strict</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="ctrl-row">
+          <span class="ctrl-label"><code>Sec-Fetch-Site</code></span>
+          <div class="seg">
+            <form method="post" action="{{ url_for('config') }}">
+              <input type="hidden" name="tab" value="{{ active_tab }}">
+              <input type="hidden" name="sec_fetch" value="0">
+              <button class="opt {{ 'active' if not state.sec_fetch else '' }}" type="submit">Off</button>
+            </form>
+            <form method="post" action="{{ url_for('config') }}">
+              <input type="hidden" name="tab" value="{{ active_tab }}">
+              <input type="hidden" name="sec_fetch" value="1">
+              <button class="opt {{ 'active' if state.sec_fetch else '' }}" type="submit">Block Cross-Site</button>
+            </form>
+          </div>
+        </div>
+
+        {% block demo_defense %}{% endblock %}
       </div>
-    </section>
 
-    {% block demo_defense %}{% endblock %}
+      <div class="wire mono">
+        <div>
+          <span class="v {{ 'hi-good' if state.sec_fetch else '' }}">HTTP/1.1 {{ posture.status }}</span>
+          · <span class="k">Cache-Control:</span> <span class="v">no-store</span>
+        </div>
+        <div>
+          <span class="k">Cookie:</span>
+          <span class="{{ 'hi-good' if posture.cookie_blocked else ('hi-warn' if posture.cookie_bypassed else 'v') }}">{{ posture.cookie_attr }}</span>
+          {% block wire_extra %}{% endblock %}
+        </div>
+      </div>
 
-    <footer>
-      Open the Attacker page in another tab:
-      {% if active_tab == 'demo-b' %}
-        <a href="{{ attacker_origin }}/demo-b" target="_blank" rel="noopener"><code>{{ attacker_origin }}/demo-b</code></a>
-      {% else %}
-        <a href="{{ attacker_origin }}" target="_blank" rel="noopener"><code>{{ attacker_origin }}</code></a>
-      {% endif %}
-    </footer>
+      <footer class="dock-footer">
+        <span>Attacker origin</span>
+        {% if active_tab == 'demo-b' %}
+          <a class="attacker-link mono" href="{{ attacker_origin }}/demo-b" target="_blank" rel="noopener">{{ attacker_origin }}/demo-b ↗</a>
+        {% else %}
+          <a class="attacker-link mono" href="{{ attacker_origin }}" target="_blank" rel="noopener">{{ attacker_origin }} ↗</a>
+        {% endif %}
+      </footer>
+    </div>
   </main>
 </body>
 </html>

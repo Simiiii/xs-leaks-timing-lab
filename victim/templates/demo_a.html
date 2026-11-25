@@ -2,36 +2,28 @@
 
 {% block title %}VICTIM (Demo A) — {{ victim_origin }}{% endblock %}
 
-{% block session_state_label %}
-  {% if logged_in %}
-    LOGGED IN (2 MB JS asset)
-  {% else %}
-    LOGGED OUT (2 kB JS asset)
-  {% endif %}
-{% endblock %}
-
-{% block session_hint %}
-  Demo A targets <code>/private-group/asset.js</code> with <code>Cache-Control: no-store</code> (JS subresource passes ORB while staying opaque to <code>no-cors</code> fetches).
+{% block resource_chips %}
+  <span class="chip {{ 'on' if logged_in else 'off' }}">{{ '2 MB JS' if logged_in else '2 kB JS' }}</span>
 {% endblock %}
 
 {% block demo_defense %}
-<section class="card">
-  <h2>Demo A Defense: Timing Side-Channel</h2>
-
-  <h3>Random Server Delay (50–250 ms)</h3>
-  <div class="btn-row">
+<div class="ctrl-row">
+  <span class="ctrl-label">Random Delay</span>
+  <div class="seg">
     <form method="post" action="{{ url_for('config') }}">
       <input type="hidden" name="tab" value="{{ active_tab }}">
       <input type="hidden" name="random_delay" value="0">
-      <button class="btn {{ 'active' if not state.random_delay else '' }}" type="submit">Off</button>
+      <button class="opt {{ 'active' if not state.random_delay else '' }}" type="submit">Off</button>
     </form>
     <form method="post" action="{{ url_for('config') }}">
       <input type="hidden" name="tab" value="{{ active_tab }}">
       <input type="hidden" name="random_delay" value="1">
-      <button class="btn {{ 'active' if state.random_delay else '' }}" type="submit">
-        On (Breaks Classic, Not Service Worker)
-      </button>
+      <button class="opt {{ 'active' if state.random_delay else '' }}" type="submit">On (50–250 ms)</button>
     </form>
   </div>
-</section>
+</div>
+{% endblock %}
+
+{% block wire_extra %}
+  {% if state.random_delay %} · <span class="hi-warn">+50–250 ms</span>{% endif %}
 {% endblock %}

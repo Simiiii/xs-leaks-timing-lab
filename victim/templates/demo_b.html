@@ -2,40 +2,38 @@
 
 {% block title %}VICTIM (Demo B) — {{ victim_origin }}{% endblock %}
 
-{% block session_state_label %}
+{% block window_extra_action %}
+  <a class="window-preview-btn" href="{{ url_for('private_group') }}" target="_blank" rel="noopener">Open ↗</a>
+{% endblock %}
+
+{% block resource_chips %}
   {% if logged_in %}
-    LOGGED IN (3 iframes)
+    <span class="chip on">iframe 1</span>
+    <span class="chip on">iframe 2</span>
+    <span class="chip on">iframe 3</span>
   {% else %}
-    LOGGED OUT (0 iframes)
+    <span class="chip off">0 iframes</span>
   {% endif %}
 {% endblock %}
 
-{% block session_hint %}
-  Demo B opens <code>/private-group</code> in a popup (served with <code>Cache-Control: no-store</code>) and counts its iframes via <code>popup.length</code>.
-{% endblock %}
-
-{% block session_extra_actions %}
-  <a class="btn" href="{{ url_for('private_group') }}" target="_blank" rel="noopener">Preview /private-group</a>
-{% endblock %}
-
 {% block demo_defense %}
-<section class="card">
-  <h2>Demo B Defense: Popup <code>window.open</code> XS-Leak</h2>
-
-  <h3><code>Cross-Origin-Opener-Policy</code> (COOP)</h3>
-  <div class="btn-row">
+<div class="ctrl-row">
+  <span class="ctrl-label"><code>COOP</code></span>
+  <div class="seg">
     <form method="post" action="{{ url_for('config') }}">
       <input type="hidden" name="tab" value="{{ active_tab }}">
       <input type="hidden" name="coop" value="0">
-      <button class="btn {{ 'active' if not state.coop else '' }}" type="submit">Off</button>
+      <button class="opt {{ 'active' if not state.coop else '' }}" type="submit">Off</button>
     </form>
     <form method="post" action="{{ url_for('config') }}">
       <input type="hidden" name="tab" value="{{ active_tab }}">
       <input type="hidden" name="coop" value="1">
-      <button class="btn {{ 'active' if state.coop else '' }}" type="submit">
-        COOP: same-origin (Severs Popup Handle)
-      </button>
+      <button class="opt {{ 'active' if state.coop else '' }}" type="submit">same-origin</button>
     </form>
   </div>
-</section>
+</div>
+{% endblock %}
+
+{% block wire_extra %}
+  {% if state.coop %} · <span class="k">COOP:</span> <span class="hi-good">same-origin</span>{% endif %}
 {% endblock %}

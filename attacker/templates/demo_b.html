@@ -2,17 +2,19 @@
 
 {% block title %}ATTACKER (Demo B) — {{ attacker_origin }}{% endblock %}
 
+{% block target_path %}/private-group{% endblock %}
+
 {% block content %}
-<section class="card">
-  <h2>Demo B: 2026 "Still Ticking" (<code>window.open</code> XS-Leak under <code>SameSite=Lax</code>)</h2>
-  <p>
-    Opens Victim in a popup (top-level navigation still carries <code>SameSite=Lax</code> cookies)
-    and reads <code>popup.length</code>. Blocked by <code>COOP: same-origin</code>,
-    <code>Sec-Fetch-Site</code>, or <code>SameSite=Strict</code>.
-  </p>
+<section class="panel">
+  <div class="panel-head">
+    <h2>Popup Frame-Count XS-Leak</h2>
+    <code class="probe-tag">window.open → popup.length</code>
+  </div>
+
   <div class="controls">
     <button id="runPopupBtn" class="btn-primary" type="button">Run Popup XS-Leak</button>
   </div>
+
   <pre id="popupOut">Ready...</pre>
 </section>
 {% endblock %}
