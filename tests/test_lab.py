@@ -32,7 +32,35 @@ def test_victim_dashboard_and_state(victim_client):
     assert b"http://victim.localhost:8001" in resp.data
     assert b"http://attacker.localhost:8002" in resp.data
     assert resp.headers["Cache-Control"] == "no-store"
+    assert b'name="random_delay"' in resp.data
+    assert b'name="coop"' not in resp.data
+    assert b'href="/demo-b"' in resp.data
 
+    demo_a = victim_client.get("/demo-a")
+    assert demo_a.status_code == 200
+    assert b'name="random_delay"' in demo_a.data
+    assert b'name="coop"' not in demo_a.data
+
+    demo_b = victim_client.get("/demo-b")
+    assert demo_b.status_code == 200
+    assert demo_b.headers["Cache-Control"] == "no-store"
+    assert b'name="coop"' in demo_b.data
+    assert b'name="random_delay"' not in demo_b.data
+    assert b'href="/demo-a"' in demo_b.data
+
+    login_b = victim_client.post("/login", data={"tab": "demo-b"})
+    assert login_b.status_code == 302
+    assert login_b.headers["Location"].endswith("/demo-b")
+
+    cfg_b = victim_client.post("/config", data={"tab": "demo-b", "coop": "1"})
+    assert cfg_b.status_code == 302
+    assert cfg_b.headers["Location"].endswith("/demo-b")
+
+    logout_b = victim_client.post("/logout", data={"tab": "demo-b"})
+    assert logout_b.status_code == 302
+    assert logout_b.headers["Location"].endswith("/demo-b")
+
+    victim_client.post("/config", data={"coop": "0"})
     state = victim_client.get("/api/state").get_json()
     assert state == {
         "logged_in": False,
@@ -116,11 +144,30 @@ def test_coop_defense_header(victim_client):
     assert resp.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
 
 
-def test_attacker_index_and_service_worker(attacker_client):
+def test_attacker_demo_pages_and_service_worker(attacker_client):
     index = attacker_client.get("/")
     assert index.status_code == 200
+    assert index.headers["Cache-Control"] == "no-store"
     assert b'data-victim-origin="http://victim.localhost:8001"' in index.data
     assert b"/static/attacker.js" in index.data
+    assert b'id="runTimingBtn"' in index.data
+    assert b'id="runPopupBtn"' not in index.data
+    assert b'href="/demo-b"' in index.data
+
+    demo_a = attacker_client.get("/demo-a")
+    assert demo_a.status_code == 200
+    assert demo_a.headers["Cache-Control"] == "no-store"
+    assert b'id="runTimingBtn"' in demo_a.data
+    assert b'id="runPopupBtn"' not in demo_a.data
+
+    demo_b = attacker_client.get("/demo-b")
+    assert demo_b.status_code == 200
+    assert demo_b.headers["Cache-Control"] == "no-store"
+    assert b'data-victim-origin="http://victim.localhost:8001"' in demo_b.data
+    assert b"/static/attacker.js" in demo_b.data
+    assert b'id="runPopupBtn"' in demo_b.data
+    assert b'id="runTimingBtn"' not in demo_b.data
+    assert b'href="/demo-a"' in demo_b.data
 
     sw = attacker_client.get("/sw.js")
     assert sw.status_code == 200

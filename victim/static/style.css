@@ -81,6 +81,39 @@ code {
   font-size: 0.9em;
 }
 
+.demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.demo-tab {
+  display: inline-block;
+  padding: 0.55rem 1.05rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.demo-tab:hover {
+  background: #ffffff;
+  color: var(--text);
+}
+
+.demo-tab.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);

@@ -11,10 +11,30 @@ const runLabelInput = document.getElementById('runLabel');
 const historyTable = document.getElementById('historyTable');
 const historyBody = document.getElementById('historyBody');
 
-const runs = [];
+const HISTORY_STORAGE_KEY = 'demoARuns';
+const runs = loadSavedRuns();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
+}
+
+function loadSavedRuns() {
+  try {
+    const raw = sessionStorage.getItem(HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRuns() {
+  try {
+    sessionStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(runs));
+  } catch {
+    // Ignore storage errors (e.g. private browsing restrictions).
+  }
 }
 
 function createMetricCell(median, spread, maxVal, barClass) {
@@ -77,6 +97,7 @@ function appendHistoryRow(label, data) {
     swMedian: Number(data.swMedian),
     swSpread: Number(data.swSpread),
   });
+  saveRuns();
   renderHistory();
 }
 
@@ -145,9 +166,16 @@ function runPopupLeak() {
   }, 700);
 }
 
-runTimingBtn.addEventListener('click', runTimingAttack);
-runPopupBtn.addEventListener('click', runPopupLeak);
-clearHistoryBtn.addEventListener('click', () => {
-  runs.length = 0;
+if (runTimingBtn && clearHistoryBtn && historyTable && historyBody) {
   renderHistory();
-});
+  runTimingBtn.addEventListener('click', runTimingAttack);
+  clearHistoryBtn.addEventListener('click', () => {
+    runs.length = 0;
+    saveRuns();
+    renderHistory();
+  });
+}
+
+if (runPopupBtn) {
+  runPopupBtn.addEventListener('click', runPopupLeak);
+}

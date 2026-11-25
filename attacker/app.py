@@ -25,17 +25,26 @@ def create_app(
         "ATTACKER_ORIGIN", "http://attacker.localhost:8002"
     )
 
-    @app.get("/")
-    def index():
+    def _render_demo(template_name: str, active_tab: str):
         resp = make_response(
             render_template(
-                "index.html",
+                template_name,
                 victim_origin=app.config["VICTIM_ORIGIN"],
                 attacker_origin=app.config["ATTACKER_ORIGIN"],
+                active_tab=active_tab,
             )
         )
         resp.headers["Cache-Control"] = "no-store"
         return resp
+
+    @app.get("/")
+    @app.get("/demo-a")
+    def index():
+        return _render_demo("demo_a.html", "demo-a")
+
+    @app.get("/demo-b")
+    def demo_b():
+        return _render_demo("demo_b.html", "demo-b")
 
     @app.get("/sw.js")
     def service_worker():

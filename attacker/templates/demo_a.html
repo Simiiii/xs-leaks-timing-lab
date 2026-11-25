@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}ATTACKER (Demo A) — {{ attacker_origin }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>Demo A: 2015 Paper (Classic Network vs. Service Worker Cache Timing)</h2>
+  <p>
+    Fetches <code>/private-group/asset.js</code> with <code>mode: 'no-cors'</code> (opaque/unreadable, JS passes ORB,
+    served with <code>Cache-Control: no-store</code>) when Victim uses <code>SameSite=None</code>.
+    Random Server Delay ruins Classic network timing, while post-download <strong>Service Worker (SW)</strong>
+    Cache API timing still reveals response size.
+  </p>
+  <div class="controls">
+    <input id="runLabel" type="text" placeholder="Optional note (e.g. Logged Out, Logged In + Delay)">
+    <button id="runTimingBtn" class="btn-primary" type="button">Run Timing Probe</button>
+    <button id="clearHistoryBtn" class="btn-secondary" type="button">Clear History</button>
+  </div>
+  <pre id="timingOut">Ready...</pre>
+
+  <table class="history-table" id="historyTable" hidden>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Note</th>
+        <th>Classic Network — Median (Max−Min)</th>
+        <th>Service Worker (SW) Cache — Median (Max−Min)</th>
+      </tr>
+    </thead>
+    <tbody id="historyBody"></tbody>
+  </table>
+</section>
+{% endblock %}

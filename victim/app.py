@@ -87,20 +87,34 @@ def create_app(
     def is_logged_in() -> bool:
         return request.cookies.get("session") == session_token
 
-    @app.get("/")
-    def dashboard():
+    def _render_demo(template_name: str, active_tab: str):
         state = store.snapshot()
         resp = make_response(
             render_template(
-                "dashboard.html",
+                template_name,
                 logged_in=is_logged_in(),
                 state=state,
                 victim_origin=app.config["VICTIM_ORIGIN"],
                 attacker_origin=app.config["ATTACKER_ORIGIN"],
+                active_tab=active_tab,
             )
         )
         resp.headers["Cache-Control"] = "no-store"
         return resp
+
+    def _redirect_target() -> str:
+        if request.form.get("tab") == "demo-b":
+            return url_for("demo_b")
+        return url_for("dashboard")
+
+    @app.get("/")
+    @app.get("/demo-a")
+    def dashboard():
+        return _render_demo("demo_a.html", "demo-a")
+
+    @app.get("/demo-b")
+    def demo_b():
+        return _render_demo("demo_b.html", "demo-b")
 
     @app.get("/api/state")
     def api_state():
@@ -110,14 +124,14 @@ def create_app(
     @app.post("/login")
     def login():
         state = store.snapshot()
-        resp = make_response(redirect(url_for("dashboard")))
+        resp = make_response(redirect(_redirect_target()))
         _set_session_cookie(resp, session_token, state.cookie_mode)
         return resp
 
     @app.post("/logout")
     def logout():
         state = store.snapshot()
-        resp = make_response(redirect(url_for("dashboard")))
+        resp = make_response(redirect(_redirect_target()))
         _set_session_cookie(resp, "deleted", state.cookie_mode, max_age=0)
         return resp
 
@@ -135,7 +149,7 @@ def create_app(
             coop=_parse_bool(request.form.get("coop")),
         )
 
-        resp = make_response(redirect(url_for("dashboard")))
+        resp = make_response(redirect(_redirect_target()))
         if is_logged_in():
             _set_session_cookie(resp, session_token, state.cookie_mode)
         return resp
