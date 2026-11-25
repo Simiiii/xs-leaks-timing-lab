@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from flask import Flask, make_response, render_template, send_from_directory
+
+from config import configure_dev_reload, resolve_origins
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -14,16 +15,14 @@ def create_app(
     attacker_origin: str | None = None,
 ) -> Flask:
     app = Flask(__name__)
-    if os.environ.get("RELOAD", "").lower() in {"1", "true", "on"}:
-        app.config["TEMPLATES_AUTO_RELOAD"] = True
-        app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+    configure_dev_reload(app)
 
-    app.config["VICTIM_ORIGIN"] = victim_origin or os.environ.get(
-        "VICTIM_ORIGIN", "http://victim.localhost:8001"
+    resolved_victim, resolved_attacker = resolve_origins(
+        victim_origin=victim_origin,
+        attacker_origin=attacker_origin,
     )
-    app.config["ATTACKER_ORIGIN"] = attacker_origin or os.environ.get(
-        "ATTACKER_ORIGIN", "http://attacker.localhost:8002"
-    )
+    app.config["VICTIM_ORIGIN"] = resolved_victim
+    app.config["ATTACKER_ORIGIN"] = resolved_attacker
 
     def _render_demo(template_name: str, active_tab: str):
         resp = make_response(

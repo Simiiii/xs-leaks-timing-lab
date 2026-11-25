@@ -3,14 +3,15 @@ from __future__ import annotations
 import pytest
 
 from attacker.app import create_app as create_attacker_app
+from config import DEFAULT_ATTACKER_ORIGIN, DEFAULT_VICTIM_ORIGIN
 from victim.app import create_app as create_victim_app
 
 
 @pytest.fixture
 def victim_client():
     app = create_victim_app(
-        victim_origin="http://victim.localhost:8001",
-        attacker_origin="http://attacker.localhost:8002",
+        victim_origin=DEFAULT_VICTIM_ORIGIN,
+        attacker_origin=DEFAULT_ATTACKER_ORIGIN,
     )
     app.config["TESTING"] = True
     return app.test_client()
@@ -19,8 +20,8 @@ def victim_client():
 @pytest.fixture
 def attacker_client():
     app = create_attacker_app(
-        victim_origin="http://victim.localhost:8001",
-        attacker_origin="http://attacker.localhost:8002",
+        victim_origin=DEFAULT_VICTIM_ORIGIN,
+        attacker_origin=DEFAULT_ATTACKER_ORIGIN,
     )
     app.config["TESTING"] = True
     return app.test_client()
@@ -29,8 +30,8 @@ def attacker_client():
 def test_victim_dashboard_and_state(victim_client):
     resp = victim_client.get("/")
     assert resp.status_code == 200
-    assert b"http://victim.localhost:8001" in resp.data
-    assert b"http://attacker.localhost:8002" in resp.data
+    assert DEFAULT_VICTIM_ORIGIN.encode() in resp.data
+    assert DEFAULT_ATTACKER_ORIGIN.encode() in resp.data
     assert resp.headers["Cache-Control"] == "no-store"
     assert b'name="random_delay"' in resp.data
     assert b'name="coop"' not in resp.data
@@ -145,10 +146,12 @@ def test_coop_defense_header(victim_client):
 
 
 def test_attacker_demo_pages_and_service_worker(attacker_client):
+    expected_victim_attr = f'data-victim-origin="{DEFAULT_VICTIM_ORIGIN}"'.encode()
+
     index = attacker_client.get("/")
     assert index.status_code == 200
     assert index.headers["Cache-Control"] == "no-store"
-    assert b'data-victim-origin="http://victim.localhost:8001"' in index.data
+    assert expected_victim_attr in index.data
     assert b"/static/attacker.js" in index.data
     assert b'id="runTimingBtn"' in index.data
     assert b'id="runPopupBtn"' not in index.data
@@ -163,7 +166,7 @@ def test_attacker_demo_pages_and_service_worker(attacker_client):
     demo_b = attacker_client.get("/demo-b")
     assert demo_b.status_code == 200
     assert demo_b.headers["Cache-Control"] == "no-store"
-    assert b'data-victim-origin="http://victim.localhost:8001"' in demo_b.data
+    assert expected_victim_attr in demo_b.data
     assert b"/static/attacker.js" in demo_b.data
     assert b'id="runPopupBtn"' in demo_b.data
     assert b'id="runTimingBtn"' not in demo_b.data

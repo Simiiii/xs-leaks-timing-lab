@@ -10,6 +10,7 @@ from werkzeug._reloader import run_with_reloader
 from werkzeug.serving import make_server
 
 from attacker.app import create_app as create_attacker_app
+from config import DEFAULT_ATTACKER_PORT, DEFAULT_VICTIM_PORT, is_reload_enabled, resolve_origins
 from victim.app import create_app as create_victim_app
 
 
@@ -24,13 +25,16 @@ def _build_ssl_context() -> ssl.SSLContext | None:
 
 
 def serve() -> None:
-    victim_port = int(os.environ.get("VICTIM_PORT", "8001"))
-    attacker_port = int(os.environ.get("ATTACKER_PORT", "8002"))
+    victim_port = int(os.environ.get("VICTIM_PORT", str(DEFAULT_VICTIM_PORT)))
+    attacker_port = int(os.environ.get("ATTACKER_PORT", str(DEFAULT_ATTACKER_PORT)))
     ssl_context = _build_ssl_context()
     scheme = "https" if ssl_context else "http"
 
-    victim_origin = os.environ.get("VICTIM_ORIGIN", f"{scheme}://victim.localhost:{victim_port}")
-    attacker_origin = os.environ.get("ATTACKER_ORIGIN", f"{scheme}://attacker.localhost:{attacker_port}")
+    victim_origin, attacker_origin = resolve_origins(
+        scheme=scheme,
+        victim_port=victim_port,
+        attacker_port=attacker_port,
+    )
 
     victim_app = create_victim_app(victim_origin=victim_origin, attacker_origin=attacker_origin)
     attacker_app = create_attacker_app(victim_origin=victim_origin, attacker_origin=attacker_origin)
@@ -70,7 +74,7 @@ def serve() -> None:
 
 
 def main() -> None:
-    if os.environ.get("RELOAD", "").lower() in {"1", "true", "on"}:
+    if is_reload_enabled():
         run_with_reloader(serve, reloader_type="stat")
     else:
         serve()
