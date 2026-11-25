@@ -25,9 +25,9 @@
       Current State:
       <span class="status {{ 'status-in' if logged_in else 'status-out' }}">
         {% if logged_in %}
-          LOGGED IN (2 MB asset + 3 iframes)
+          LOGGED IN (2 MB asset)
         {% else %}
-          LOGGED OUT (2 kB asset + 0 iframes)
+          LOGGED OUT (2 kB asset)
         {% endif %}
       </span>
     </p>
@@ -85,7 +85,7 @@
   <section class="card">
     <h2>Demo A Defense: Timing Side-Channel</h2>
 
-    <h3>Random Server Delay (150–450 ms)</h3>
+    <h3>Random Server Delay (50–250 ms)</h3>
     <div class="btn-row">
       <form method="post" action="{{ url_for('config') }}">
         <input type="hidden" name="random_delay" value="0">

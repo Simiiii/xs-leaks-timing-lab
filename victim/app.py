@@ -19,7 +19,7 @@ VALID_COOKIE_MODES = {"none", "lax", "strict"}
 class LabState:
     cookie_mode: str = "none"   # "none" (2015/opt-out), "lax" (default), "strict"
     sec_fetch: bool = False     # True = reject Sec-Fetch-Site: cross-site (Demo A & B)
-    random_delay: bool = False  # True = 150-450ms random server delay (Demo A)
+    random_delay: bool = False  # True = 50-250ms random server delay (Demo A)
     coop: bool = False          # True = Cross-Origin-Opener-Policy: same-origin (Demo B)
 
 
@@ -169,7 +169,7 @@ def create_app(
     def private_group_asset():
         state = store.snapshot()
         if state.random_delay:
-            time.sleep(random.uniform(0.15, 0.45))
+            time.sleep(random.uniform(0.05, 0.25))
 
         sec_fetch_site = request.headers.get("Sec-Fetch-Site", "")
         if state.sec_fetch and sec_fetch_site == "cross-site":
