@@ -37,8 +37,9 @@ def test_victim_dashboard_and_state(victim_client):
     assert state == {
         "logged_in": False,
         "cookie_mode": "none",
+        "sec_fetch": False,
         "random_delay": False,
-        "defense": "off",
+        "coop": False,
     }
 
 
@@ -81,7 +82,7 @@ def test_cookie_mode_reissues_cookie_when_logged_in(victim_client):
 
 def test_sec_fetch_site_defense(victim_client):
     victim_client.post("/login")
-    victim_client.post("/config", data={"defense": "sec-fetch"})
+    victim_client.post("/config", data={"sec_fetch": "1"})
 
     blocked = victim_client.get("/private-group", headers={"Sec-Fetch-Site": "cross-site"})
     assert blocked.status_code == 403
@@ -93,7 +94,7 @@ def test_sec_fetch_site_defense(victim_client):
 
 
 def test_coop_defense_header(victim_client):
-    victim_client.post("/config", data={"defense": "coop"})
+    victim_client.post("/config", data={"coop": "1"})
     resp = victim_client.get("/private-group")
     assert resp.status_code == 200
     assert resp.headers.get("Cross-Origin-Opener-Policy") == "same-origin"

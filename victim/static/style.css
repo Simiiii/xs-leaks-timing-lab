@@ -24,6 +24,7 @@ header { margin-bottom: 1.25rem; }
 h1 { margin: 0.35rem 0 0; font-size: 1.5rem; }
 h2 { margin: 1.1rem 0 0.5rem; font-size: 1.05rem; }
 h2:first-child { margin-top: 0; }
+h3 { margin: 0.9rem 0 0.4rem; font-size: 0.92rem; color: var(--muted); font-weight: 600; }
 
 code {
   background: #f1f5f9;

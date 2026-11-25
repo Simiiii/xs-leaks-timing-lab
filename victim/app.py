@@ -12,14 +12,14 @@ PADDING_500KB = "A" * 500_000
 PADDING_2KB = "B" * 2_000
 
 VALID_COOKIE_MODES = {"none", "lax", "strict"}
-VALID_DEFENSES = {"off", "sec-fetch", "coop"}
 
 
 @dataclass
 class LabState:
     cookie_mode: str = "none"   # "none" (2015/opt-out), "lax" (default), "strict"
-    random_delay: bool = False  # True = 150-450ms random server delay
-    defense: str = "off"        # "off", "sec-fetch", "coop"
+    sec_fetch: bool = False     # True = reject Sec-Fetch-Site: cross-site (Demo A & B)
+    random_delay: bool = False  # True = 150-450ms random server delay (Demo A)
+    coop: bool = False          # True = Cross-Origin-Opener-Policy: same-origin (Demo B)
 
 
 class StateStore:
@@ -35,16 +35,19 @@ class StateStore:
         self,
         *,
         cookie_mode: str | None = None,
+        sec_fetch: bool | None = None,
         random_delay: bool | None = None,
-        defense: str | None = None,
+        coop: bool | None = None,
     ) -> LabState:
         with self._lock:
             if cookie_mode in VALID_COOKIE_MODES:
                 self._state.cookie_mode = cookie_mode
+            if sec_fetch is not None:
+                self._state.sec_fetch = sec_fetch
             if random_delay is not None:
                 self._state.random_delay = random_delay
-            if defense in VALID_DEFENSES:
-                self._state.defense = defense
+            if coop is not None:
+                self._state.coop = coop
             return LabState(**asdict(self._state))
 
 
@@ -113,20 +116,18 @@ def create_app(
         _set_session_cookie(resp, "deleted", state.cookie_mode, max_age=0)
         return resp
 
+    def _parse_bool(raw: str | None) -> bool | None:
+        if raw is None:
+            return None
+        return raw in {"1", "true", "on"}
+
     @app.post("/config")
     def config():
-        cookie_mode = request.form.get("cookie_mode")
-        delay_raw = request.form.get("random_delay")
-        defense = request.form.get("defense")
-
-        random_delay = None
-        if delay_raw is not None:
-            random_delay = delay_raw in {"1", "true", "on"}
-
         state = store.update(
-            cookie_mode=cookie_mode,
-            random_delay=random_delay,
-            defense=defense,
+            cookie_mode=request.form.get("cookie_mode"),
+            sec_fetch=_parse_bool(request.form.get("sec_fetch")),
+            random_delay=_parse_bool(request.form.get("random_delay")),
+            coop=_parse_bool(request.form.get("coop")),
         )
 
         resp = make_response(redirect(url_for("dashboard")))
@@ -141,7 +142,7 @@ def create_app(
             time.sleep(random.uniform(0.15, 0.45))
 
         sec_fetch_site = request.headers.get("Sec-Fetch-Site", "")
-        if state.defense == "sec-fetch" and sec_fetch_site == "cross-site":
+        if state.sec_fetch and sec_fetch_site == "cross-site":
             resp = make_response(
                 render_template("blocked.html", padding=PADDING_2KB),
                 403,
@@ -158,7 +159,7 @@ def create_app(
             )
 
         resp.headers["Cache-Control"] = "no-store"
-        if state.defense == "coop":
+        if state.coop:
             resp.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         return resp
 

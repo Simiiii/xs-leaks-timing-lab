@@ -35,7 +35,9 @@
   </section>
 
   <section class="card">
-    <h2>1. Cookie Policy (<code>SameSite</code>)</h2>
+    <h2>General Defenses (Demo A &amp; Demo B)</h2>
+
+    <h3>Cookie Policy (<code>SameSite</code>)</h3>
     <div class="btn-row">
       <form method="post" action="{{ url_for('config') }}">
         <input type="hidden" name="cookie_mode" value="none">
@@ -46,18 +48,36 @@
       <form method="post" action="{{ url_for('config') }}">
         <input type="hidden" name="cookie_mode" value="lax">
         <button class="btn {{ 'active' if state.cookie_mode == 'lax' else '' }}" type="submit">
-          SameSite=Lax (2026 Default)
+          SameSite=Lax (2026 Default — Blocks A)
         </button>
       </form>
       <form method="post" action="{{ url_for('config') }}">
         <input type="hidden" name="cookie_mode" value="strict">
         <button class="btn {{ 'active' if state.cookie_mode == 'strict' else '' }}" type="submit">
-          SameSite=Strict
+          SameSite=Strict (Blocks A &amp; B)
         </button>
       </form>
     </div>
 
-    <h2>2. Classic Defense: Random Server Delay (150–450 ms)</h2>
+    <h3>Fetch Metadata (<code>Sec-Fetch-Site</code>)</h3>
+    <div class="btn-row">
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="sec_fetch" value="0">
+        <button class="btn {{ 'active' if not state.sec_fetch else '' }}" type="submit">Off</button>
+      </form>
+      <form method="post" action="{{ url_for('config') }}">
+        <input type="hidden" name="sec_fetch" value="1">
+        <button class="btn {{ 'active' if state.sec_fetch else '' }}" type="submit">
+          Block Cross-Site (Blocks A &amp; B)
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Demo A Defense: Timing Side-Channel</h2>
+
+    <h3>Random Server Delay (150–450 ms)</h3>
     <div class="btn-row">
       <form method="post" action="{{ url_for('config') }}">
         <input type="hidden" name="random_delay" value="0">
@@ -70,23 +90,21 @@
         </button>
       </form>
     </div>
+  </section>
 
-    <h2>3. Modern Server Defenses</h2>
+  <section class="card">
+    <h2>Demo B Defense: Popup <code>window.open</code> XS-Leak</h2>
+
+    <h3><code>Cross-Origin-Opener-Policy</code> (COOP)</h3>
     <div class="btn-row">
       <form method="post" action="{{ url_for('config') }}">
-        <input type="hidden" name="defense" value="off">
-        <button class="btn {{ 'active' if state.defense == 'off' else '' }}" type="submit">None</button>
+        <input type="hidden" name="coop" value="0">
+        <button class="btn {{ 'active' if not state.coop else '' }}" type="submit">Off</button>
       </form>
       <form method="post" action="{{ url_for('config') }}">
-        <input type="hidden" name="defense" value="sec-fetch">
-        <button class="btn {{ 'active' if state.defense == 'sec-fetch' else '' }}" type="submit">
-          Sec-Fetch-Site Block
-        </button>
-      </form>
-      <form method="post" action="{{ url_for('config') }}">
-        <input type="hidden" name="defense" value="coop">
-        <button class="btn {{ 'active' if state.defense == 'coop' else '' }}" type="submit">
-          COOP: same-origin
+        <input type="hidden" name="coop" value="1">
+        <button class="btn {{ 'active' if state.coop else '' }}" type="submit">
+          COOP: same-origin (Severs Popup Handle)
         </button>
       </form>
     </div>
