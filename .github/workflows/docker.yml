@@ -3,6 +3,10 @@ name: Publish Docker Image
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -10,7 +14,7 @@ permissions:
   packages: write
 
 jobs:
-  build-and-publish:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,6 +24,14 @@ jobs:
         run: |
           docker build -t web-timing-demo .
           docker run --rm web-timing-demo pytest -v
+
+  publish:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
